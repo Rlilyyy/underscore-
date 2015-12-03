@@ -33,3 +33,43 @@ var baseCreate = function(prototype) {
     return result;
 };
 ```
+
+### 2.optimizeCb(func, context, argCount)
+### 作用:根据argCount判断要返回何种迭代函数
+``` js
+var optimizeCb = function(func, context, argCount) {
+	// func->需要执行的函数
+	// context->执行函数的上下文
+	// argCount->参数个数
+	// 如果没有传入上下文context，则直接返回需要执行的func
+  if (context === void 0) return func;
+  // 
+  switch (argCount == null ? 3 : argCount) {
+  	// 参数1个，返回context.func(value)
+    case 1: return function(value) {
+      return func.call(context, value);
+    };
+    // The 2-parameter case has been omitted only because no current consumers
+    // made use of it.
+    // 参数2个的情况并没被使用到，可能以后会有
+
+    // 参数3个，返回context.func(value, index, collection)
+    // value->当前遍历的集合内容
+    // index->当前索引
+    // collection->当前的集合
+    case 3: return function(value, index, collection) {
+      return func.call(context, value, index, collection);
+    };
+
+    // 参数4个，返回context.func(accumulator, value, index, collection)
+    case 4: return function(accumulator, value, index, collection) {
+      return func.call(context, accumulator, value, index, collection);
+    };
+  }
+
+  // 其实switch可以不要，因为下面的apply是可以完成上面的工作的，其实就是为了尽量不适用arguments，在V8引擎下无法优化
+  return function() {
+    return func.apply(context, arguments);
+  };
+};
+```
