@@ -73,3 +73,17 @@ var optimizeCb = function(func, context, argCount) {
   };
 };
 ```
+### 3.cb(value, context, argCount)
+### 作用:根据value的类型，对value做相对应的处理
+``` js
+// A mostly-internal function to generate callbacks that can be applied
+// to each element in a collection, returning the desired result — either
+// `identity`, an arbitrary callback, a property matcher, or a property accessor.
+// 这里判断value的类型，进行返回
+var cb = function(value, context, argCount) {
+	if (value == null) return _.identity;
+	if (_.isFunction(value)) return optimizeCb(value, context, argCount);
+	if (_.isObject(value)) return _.matcher(value);
+	return _.property(value);
+};
+```
