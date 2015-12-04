@@ -126,3 +126,46 @@ var restArgs = function(func, startIndex) {
     };
   };
 ```
+### 5.property(key)
+### 作用:返回能够获取obj里key属性的函数（eg：getLength(obj)）
+``` js
+// 返回能够获取obj的key属性的函数
+  var property = function(key) {
+    return function(obj) {
+      return obj == null ? void 0 : obj[key];
+    };
+  };
+```
+### 6.isArrayLike(collention)
+### 作用:判断collection是否类数组类型
+``` js
+var isArrayLike = function(collection) {
+    // 获取collection的length属性
+    var length = getLength(collection);
+    // 如果length是一个数值并且大于0小于最大值，那么返回true
+    return typeof length == 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;
+  };
+```
+### 6.each(obj, iteratee, context)/forEach(obj, iteratee, context)
+### 作用:根据iteratee迭代obj的每个元素
+``` js
+_.each = _.forEach = function(obj, iteratee, context) {
+    iteratee = optimizeCb(iteratee, context);
+    var i, length;
+    if (isArrayLike(obj)) {
+      // 如果传入的obj类似数组
+      for (i = 0, length = obj.length; i < length; i++) {
+        iteratee(obj[i], i, obj);
+      }
+    } else {
+      // 如果obj是对象
+      // 那么现将obj转换成可迭代的数组
+      var keys = _.keys(obj);
+      for (i = 0, length = keys.length; i < length; i++) {
+        iteratee(obj[keys[i]], keys[i], obj);
+      }
+    }
+    // 最后返回原对象，方便链式调用
+    return obj;
+  };
+```
