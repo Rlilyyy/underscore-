@@ -146,7 +146,7 @@ var isArrayLike = function(collection) {
     return typeof length == 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;
   };
 ```
-### 6.each(obj, iteratee, context)/forEach(obj, iteratee, context)
+### 7.each(obj, iteratee, context)/forEach(obj, iteratee, context)
 ### 作用:根据iteratee迭代obj的每个元素
 ``` js
 _.each = _.forEach = function(obj, iteratee, context) {
