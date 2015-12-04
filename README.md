@@ -87,3 +87,42 @@ var cb = function(value, context, argCount) {
 	return _.property(value);
 };
 ```
+### 4.restArgs(func, startIndex) 
+### 作用:处理func，使func从startIndex开始后的所有参数都被视为剩余参数，然后包装成一个数组
+``` js
+var restArgs = function(func, startIndex) {
+  	// 用.invoke的例子解释
+  	// 首先会判断invoke需要restArgs的函数的参数个数
+  	// 很明显，是3个，那么startIndex就是2
+  	// 然后返回一个函数给invoke
+  	// 此时invoke是没有明确声明形参的
+  	// 那么根据你传入的参数个数，之前已经确定了有三个参数，那么第三个默认为剩余参数的集合
+  	// arguments.length获取的是invoke()里的传入的参数的个数，这样判断需要获取多少个剩余参数加入集合
+  	// 根据startIndex可以开始call
+  	// 总而言之，这个函数的作用就是你传入一个函数，他帮你处理成一个默认你传入的函数里的最后一个形参为收集剩余参数的集合
+  	// 并返回这个处理好的函数
+  	// 其实返回的函数是复用的，就是将重复做的工作处理成模板
+    startIndex = startIndex == null ? func.length - 1 : +startIndex;
+    return function() {
+    	// 返回的函数里有衡量好的startIndex，根据这个可以处理剩余参数
+      var length = Math.max(arguments.length - startIndex, 0);
+      var rest = Array(length);
+      for (var index = 0; index < length; index++) {
+        rest[index] = arguments[index + startIndex];
+      }
+      switch (startIndex) {
+      	// 根据开始的索引，判断传入的数组的位置
+        case 0: return func.call(this, rest);
+        case 1: return func.call(this, arguments[0], rest);
+        case 2: return func.call(this, arguments[0], arguments[1], rest);
+      }
+      // 若非剩余参数数量过多，则将直接使用apply接收包装好的非剩余参数和剩余参数数组
+      var args = Array(startIndex + 1);
+      for (index = 0; index < startIndex; index++) {
+        args[index] = arguments[index];
+      }
+      args[startIndex] = rest;
+      return func.apply(this, args);
+    };
+  };
+```
