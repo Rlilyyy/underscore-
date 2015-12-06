@@ -218,6 +218,11 @@ _.each = _.forEach = function(obj, iteratee, context) {
 
   // Create a safe reference to the Underscore object for use below.
   // 创建_变量
+  // 这里初始化一个_函数作为全局变量，也是underscore
+  // 下面的所有函数都是_的构造函数的一部分
+  // new _(obj)，则新建的_实例的原型就是使用mixin构造的，并不是下面使用_.methodName
+  // underscore实例调用的方法实际都来自mixin创建的原型方法
+  // 而最原始的_的方法是来自对象的方法,新建实例的时候这些方法不会被赋予新实例
   var _ = function(obj) {
     if (obj instanceof _) return obj;
     if (!(this instanceof _)) return new _(obj);
@@ -1279,11 +1284,13 @@ _.each = _.forEach = function(obj, iteratee, context) {
   // Returns the first function passed as an argument to the second,
   // allowing you to adjust arguments, run code before and after, and
   // conditionally execute the original function.
+  // 注意这里传参和实际调用的顺序相反，即使将func传入了wrapper
   _.wrap = function(func, wrapper) {
     return _.partial(wrapper, func);
   };
 
   // Returns a negated version of the passed-in predicate.
+  // 返回一个判断结果相反的函数predicate
   _.negate = function(predicate) {
     return function() {
       return !predicate.apply(this, arguments);
@@ -1292,18 +1299,24 @@ _.each = _.forEach = function(obj, iteratee, context) {
 
   // Returns a function that is the composition of a list of functions, each
   // consuming the return value of the function that follows.
+  // 返回函数集 functions 组合后的复合函数, 
+  // 也就是一个函数执行完之后把返回的结果再作为参数赋给下一个函数来执行. 
+  // 以此类推. 在数学里, 把函数 f(), g(), 和 h() 组合起来可以得到复合函数 f(g(h()))。
   _.compose = function() {
     var args = arguments;
     var start = args.length - 1;
     return function() {
       var i = start;
+      // 首先执行最后一个函数得到结果
       var result = args[start].apply(this, arguments);
+      // 然后从后往前的函数一个个调用前一个的结果
       while (i--) result = args[i].call(this, result);
       return result;
     };
   };
 
   // Returns a function that will only be executed on and after the Nth call.
+  // func只有调用了times次后才能执行
   _.after = function(times, func) {
     return function() {
       if (--times < 1) {
@@ -1313,6 +1326,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
   };
 
   // Returns a function that will only be executed up to (but not including) the Nth call.
+  // func的调用次数不超过times次，不包括第times次，第times-1次的结果将被返回
   _.before = function(times, func) {
     var memo;
     return function() {
@@ -1326,6 +1340,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
 
   // Returns a function that will be executed at most one time, no matter how
   // often you call it. Useful for lazy initialization.
+  // 只能执行一次的函数
   _.once = _.partial(_.before, 2);
 
   _.restArgs = restArgs;
@@ -1334,21 +1349,28 @@ _.each = _.forEach = function(obj, iteratee, context) {
   // ----------------
 
   // Keys in IE < 9 that won't be iterated by `for key in ...` and thus missed.
+  // IE9-的浏览器有一个bug,当对象属性有与例如toString之类的名称时,将不会出现在for……in枚举中
+  // propertyIsEnumerable可以用来检测toString是否可以被枚举，如果不可以则会返回false，hasEmumBug返回true
   var hasEnumBug = !{toString: null}.propertyIsEnumerable('toString');
+  // 以下是不可枚举的属性
   var nonEnumerableProps = ['valueOf', 'isPrototypeOf', 'toString',
                       'propertyIsEnumerable', 'hasOwnProperty', 'toLocaleString'];
 
+  // 这个内部函数由别的函数调用，是用于克服IE9-的BUG，将与[[DontEnum]]属性同名的实例属性添加至keys数组中的
   var collectNonEnumProps = function(obj, keys) {
     var nonEnumIdx = nonEnumerableProps.length;
     var constructor = obj.constructor;
+    // 获取obj的原型，如果没有就获取Object的原型
     var proto = _.isFunction(constructor) && constructor.prototype || ObjProto;
 
     // Constructor is a special case.
     var prop = 'constructor';
+    // 判断obj中是否有constructor属性，并且keys中还未插入，满足的话就插入keys
     if (_.has(obj, prop) && !_.contains(keys, prop)) keys.push(prop);
 
     while (nonEnumIdx--) {
       prop = nonEnumerableProps[nonEnumIdx];
+      // 如果obj中有prop属性，并且不是原型中的prop属性，并且keys还未插入，都满足就插入keys
       if (prop in obj && obj[prop] !== proto[prop] && !_.contains(keys, prop)) {
         keys.push(prop);
       }
@@ -1380,7 +1402,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
   };
 
   // Retrieve the values of an object's properties.
-  // 返回对象里的所有值，不包括原型链里的
+  // 返回对象里的所有属性的值，不包括原型链里的
   _.values = function(obj) {
     var keys = _.keys(obj);
     var length = keys.length;
@@ -1393,6 +1415,9 @@ _.each = _.forEach = function(obj, iteratee, context) {
 
   // Returns the results of applying the iteratee to each element of the object
   // In contrast to _.map it returns an object
+  // 类似于map，但是map是返回计算后的结果集
+  // 这里返回的是经过iteratee转换的键值对象
+  // 主要用于对象
   _.mapObject = function(obj, iteratee, context) {
     iteratee = cb(iteratee, context);
     var keys = _.keys(obj),
@@ -1406,6 +1431,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
   };
 
   // Convert an object into a list of `[key, value]` pairs.
+  // 把一个对象转变为一个[key, value]形式的数组。
   _.pairs = function(obj) {
     var keys = _.keys(obj);
     var length = keys.length;
@@ -1417,6 +1443,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
   };
 
   // Invert the keys and values of an object. The values must be serializable.
+  // 将obj的键值调换位置，必须保证值是唯一的，否则会发生覆盖
   _.invert = function(obj) {
     var result = {};
     var keys = _.keys(obj);
@@ -1428,6 +1455,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
 
   // Return a sorted list of the function names available on the object.
   // Aliased as `methods`
+  // 返回一个对象里的所有函数名，且函数名是排序好的
   _.functions = _.methods = function(obj) {
     var names = [];
     for (var key in obj) {
@@ -1449,6 +1477,8 @@ _.each = _.forEach = function(obj, iteratee, context) {
             l = keys.length;
         for (var i = 0; i < l; i++) {
           var key = keys[i];
+          // 这里如果defaults没启用，则可以直接插入，但是可能发生覆盖
+          // 如果defaults启用了，那么如果obj已存在的键值不会被覆盖
           if (!defaults || obj[key] === void 0) obj[key] = source[key];
         }
       }
@@ -1457,15 +1487,18 @@ _.each = _.forEach = function(obj, iteratee, context) {
   };
 
   // Extend a given object with all the properties in passed-in object(s).
+  // 将多个对象的所有属性（包括原型中）打包成一个新对象返回
   _.extend = createAssigner(_.allKeys);
 
   // Assigns a given object with all the own properties in the passed-in object(s)
   // (https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/assign)
   // 将传入的需要继承的obj的对象的键值加入到obj里
+  // 将多个对象的所有属性（不包括原型中）打包成一个新对象返回
   _.extendOwn = _.assign = createAssigner(_.keys);
 
   // Returns the first key on an object that passes a predicate test
   // 先将obj的key全部取出成为一个数组，然后一一遍历key对应的值，判断是否相等，最后返回key
+  // 找到符合predicate的第一个obj的key
   _.findKey = function(obj, predicate, context) {
     predicate = cb(predicate, context);
     var keys = _.keys(obj), key;
@@ -1476,20 +1509,24 @@ _.each = _.forEach = function(obj, iteratee, context) {
   };
 
   // Internal pick helper function to determine if `obj` has key `key`.
+  // 判断key是否在obj中
   var keyInObj = function(value, key, obj) {
     return key in obj;
   };
 
   // Return a copy of the object only containing the whitelisted properties.
+  // 过滤出obj的keys属性的键值
   _.pick = restArgs(function(obj, keys) {
     var result = {}, iteratee = keys[0];
     if (obj == null) return result;
     if (_.isFunction(iteratee)) {
+      // 如果是函数，根据函数来判断返回的对象的键值
       if (keys.length > 1) iteratee = optimizeCb(iteratee, keys[1]);
       keys = _.allKeys(obj);
     } else {
+      // 若是指定过滤属性值
       iteratee = keyInObj;
-      keys = flatten(keys, false, false);
+      keys = flatten(keys, false, false);// 将keys完全展开成一个数组
       obj = Object(obj);
     }
     for (var i = 0, length = keys.length; i < length; i++) {
@@ -1504,11 +1541,15 @@ _.each = _.forEach = function(obj, iteratee, context) {
   _.omit = restArgs(function(obj, keys) {
     var iteratee = keys[0], context;
     if (_.isFunction(iteratee)) {
+      // 获得相反判断函数
       iteratee = _.negate(iteratee);
+      // 获得上下文
       if (keys.length > 1) context = keys[1];
     } else {
+      // 将keys全部展开并转化为String类型
       keys = _.map(flatten(keys, false, false), String);
       iteratee = function(value, key) {
+        // 如果keys中没有key，返回true
         return !_.contains(keys, key);
       };
     }
@@ -1516,11 +1557,13 @@ _.each = _.forEach = function(obj, iteratee, context) {
   });
 
   // Fill in a given object with default properties.
+  // 对一个对象的空属性，使用另一个对象的属性进行初始化
   _.defaults = createAssigner(_.allKeys, true);
 
   // Creates an object that inherits from the given prototype object.
   // If additional properties are provided then they will be added to the
   // created object.
+  // 创建一个给定prototype的对象，如果props存在，那么同时要继承props自身的属性
   _.create = function(prototype, props) {
     var result = baseCreate(prototype);
     if (props) _.extendOwn(result, props);
@@ -1528,6 +1571,8 @@ _.each = _.forEach = function(obj, iteratee, context) {
   };
 
   // Create a (shallow-cloned) duplicate of an object.
+  // 浅拷贝一个对象
+  // extend和extendOwn也是浅拷贝
   _.clone = function(obj) {
     if (!_.isObject(obj)) return obj;
     return _.isArray(obj) ? obj.slice() : _.extend({}, obj);
@@ -1536,6 +1581,8 @@ _.each = _.forEach = function(obj, iteratee, context) {
   // Invokes interceptor with the obj, and then returns obj.
   // The primary purpose of this method is to "tap into" a method chain, in
   // order to perform operations on intermediate results within the chain.
+  // 作为链式调用中的一环，可以打印链式到当前的结果，而不影响接下去的链式调用
+  // 因为它原封不动返回了obj
   _.tap = function(obj, interceptor) {
     interceptor(obj);
     return obj;
@@ -1956,9 +2003,12 @@ _.each = _.forEach = function(obj, iteratee, context) {
   // If Underscore is called as a function, it returns a wrapped object that
   // can be used OO-style. This wrapper holds altered versions of all the
   // underscore functions. Wrapped objects may be chained.
-
   // Helper function to continue chaining intermediate results.
   var chainResult = function(instance, obj) {
+    // 如果依旧可以链式调用，那么调用underscore原型中的chain，不是_.chain()，请注意
+    // 所以这里的obj是一个运算结果，然后这个结果被新建了一个_实例，且wrapped对应这个结果
+    // 然后调用chain又将这个结果传进去，以此来达到链式调用的效果
+    console.log(obj)
     return instance._chain ? _(obj).chain() : obj;
   };
 
@@ -1968,6 +2018,9 @@ _.each = _.forEach = function(obj, iteratee, context) {
       var func = _[name] = obj[name];
       _.prototype[name] = function() {
         var args = [this._wrapped];
+        // args是获取到的最开始的数据
+        // arguments是在链式调用中传入的数据
+        // 拼接起来，即args始终是第一个
         push.apply(args, arguments);
         return chainResult(this, func.apply(_, args));
       };
