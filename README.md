@@ -370,7 +370,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
     return result;
   };
 
-  // 返回能够获取obj的key属性的函数
+  // 返回一个传入obj获取之前预定好的key的值的函数
   var property = function(key) {
     return function(obj) {
       return obj == null ? void 0 : obj[key];
@@ -1589,12 +1589,14 @@ _.each = _.forEach = function(obj, iteratee, context) {
   };
 
   // Returns whether an object has a given set of `key:value` pairs.
+  // 判断attrs是否在object中
   _.isMatch = function(object, attrs) {
     var keys = _.keys(attrs), length = keys.length;
     if (object == null) return !length;
     var obj = Object(object);
     for (var i = 0; i < length; i++) {
       var key = keys[i];
+      // undefined可以相等，所以要再判断key是否在obj中存在
       if (attrs[key] !== obj[key] || !(key in obj)) return false;
     }
     return true;
@@ -1606,23 +1608,32 @@ _.each = _.forEach = function(obj, iteratee, context) {
   eq = function(a, b, aStack, bStack) {
     // Identical objects are equal. `0 === -0`, but they aren't identical.
     // See the [Harmony `egal` proposal](http://wiki.ecmascript.org/doku.php?id=harmony:egal).
+    // 如果a===b,那么还要检测0和-0相等的情况
+    // 1/0 = Infinity，-1/0 = -Infinity
     if (a === b) return a !== 0 || 1 / a === 1 / b;
     // A strict comparison is necessary because `null == undefined`.
+    // 如果a和b有一个是null，那么要比较是否存在undefined和null相比较的情况，两个是不相等的
     if (a == null || b == null) return a === b;
     // `NaN`s are equivalent, but non-reflexive.
+    // 当a是NaN，那么判断b是否也是NaN
     if (a !== a) return b !== b;
     // Exhaust primitive checks
     var type = typeof a;
+    // 如果a不是函数和对象，b也不是对象，那么就不相等了
+    // 以上判断都是基于基本类型的判断
     if (type !== 'function' && type !== 'object' && typeof b != 'object') return false;
+    // 如果以上都没有判断出结果，那么明显a和b是引用类型
     return deepEq(a, b, aStack, bStack);
   };
 
   // Internal recursive comparison function for `isEqual`.
   deepEq = function(a, b, aStack, bStack) {
     // Unwrap any wrapped objects.
+    // 如果a和b是underscore的实例，那么需要判断_wrapped值
     if (a instanceof _) a = a._wrapped;
     if (b instanceof _) b = b._wrapped;
     // Compare `[[Class]]` names.
+    // 比较a和b的类型
     var className = toString.call(a);
     if (className !== toString.call(b)) return false;
     switch (className) {
@@ -1647,13 +1658,23 @@ _.each = _.forEach = function(obj, iteratee, context) {
         return +a === +b;
     }
 
+    // 得到a是否是数组
     var areArrays = className === '[object Array]';
     if (!areArrays) {
+      // 首先a已经判断不是数组
+      // 那么如果a也不是函数，则表示a和b的类型不同
+      // 如果a不是函数，是对象
+      // 那么b如果不是对象，也就不相等了
       if (typeof a != 'object' || typeof b != 'object') return false;
 
       // Objects with different constructors are not equivalent, but `Object`s or `Array`s
       // from different frames are.
       var aCtor = a.constructor, bCtor = b.constructor;
+      // a和b的构造函数不同
+      // a和b的构造函数是函数并且构造函数必须是自己的实例
+      // (貌似是指对象的构造函数必须是最原始的，而不是继承来的，
+      // 最原始的构造函数是function Function(){},所有function都是他的实例)
+      // 如果a和b没有构造函数
       if (aCtor !== bCtor && !(_.isFunction(aCtor) && aCtor instanceof aCtor &&
                                _.isFunction(bCtor) && bCtor instanceof bCtor)
                           && ('constructor' in a && 'constructor' in b)) {
@@ -1671,6 +1692,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
     while (length--) {
       // Linear search. Performance is inversely proportional to the number of
       // unique nested structures.
+      // 有些奇怪的数组会自己插入自己，此时只要判断a和b相对应的栈是否都各自对应自己
       if (aStack[length] === a) return bStack[length] === b;
     }
 
@@ -1679,11 +1701,14 @@ _.each = _.forEach = function(obj, iteratee, context) {
     bStack.push(b);
 
     // Recursively compare objects and arrays.
+    // 如果是数组的判断
     if (areArrays) {
       // Compare array lengths to determine if a deep comparison is necessary.
       length = a.length;
+      // a和b的数组长度不相等，明显它们也不相等
       if (length !== b.length) return false;
       // Deep compare the contents, ignoring non-numeric properties.
+      // 深度遍历数组的所有属性进行比较
       while (length--) {
         if (!eq(a[length], b[length], aStack, bStack)) return false;
       }
@@ -1713,29 +1738,36 @@ _.each = _.forEach = function(obj, iteratee, context) {
   // Is a given array, string, or object empty?
   // An "empty" object has no enumerable own-properties.
   _.isEmpty = function(obj) {
+    // 如果obj为null，直接判断为空
     if (obj == null) return true;
+    // 有length属性的使用length属性进行判断
     if (isArrayLike(obj) && (_.isArray(obj) || _.isString(obj) || _.isArguments(obj))) return obj.length === 0;
+    // 如果是对象之类的类型，那么获取对象的所有key的集合，根据key的数量判断
     return _.keys(obj).length === 0;
   };
 
   // Is a given value a DOM element?
   _.isElement = function(obj) {
+    // obj不为空且obj的node类型为1
     return !!(obj && obj.nodeType === 1);
   };
 
   // Is a given value an array?
   // Delegates to ECMA5's native Array.isArray
+  // 如果本地判断数组方法可用就用本地的，否则使用自己创建的
   _.isArray = nativeIsArray || function(obj) {
     return toString.call(obj) === '[object Array]';
   };
 
   // Is a given variable an object?
+  // function类型也算是object
   _.isObject = function(obj) {
     var type = typeof obj;
     return type === 'function' || type === 'object' && !!obj;
   };
 
   // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp, isError.
+  // 判断各种类型的方法
   _.each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp', 'Error'], function(name) {
     _['is' + name] = function(obj) {
       return toString.call(obj) === '[object ' + name + ']';
@@ -1744,6 +1776,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
 
   // Define a fallback version of the method in browsers (ahem, IE < 9), where
   // there isn't any inspectable "Arguments" type.
+  // IE9-对判断arguments的特殊判断方法
   if (!_.isArguments(arguments)) {
     _.isArguments = function(obj) {
       return _.has(obj, 'callee');
@@ -1760,8 +1793,9 @@ _.each = _.forEach = function(obj, iteratee, context) {
   }
 
   // Is a given object a finite number?
+  // obj是否一个有限数字
   _.isFinite = function(obj) {
-    return isFinite(obj) && !isNaN(parseFloat(obj));
+    return isFinite(obj) && !isNaN(parseFloat(obj));// 原版的isFinite会把null当做Finite
   };
 
   // Is the given value `NaN`?
@@ -1786,6 +1820,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
 
   // Shortcut function for checking if an object has a given property directly
   // on itself (in other words, not on a prototype).
+  // obj是否有key属性（不包括原型中的）
   _.has = function(obj, key) {
     return obj != null && hasOwnProperty.call(obj, key);
   };
@@ -1795,7 +1830,9 @@ _.each = _.forEach = function(obj, iteratee, context) {
 
   // Run Underscore.js in *noConflict* mode, returning the `_` variable to its
   // previous owner. Returns a reference to the Underscore object.
+  // 重新设置underscore的引用对象，即可以让_变为你想要的值
   _.noConflict = function() {
+    // 将最原始的_变量变回之前状态
     root._ = previousUnderscore;
     return this;
   };
@@ -1817,6 +1854,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
   _.property = property;
 
   // Generates a function for a given object that returns a given property.
+  // 返回一个获取之前预定好的obj的key的值的函数
   _.propertyOf = function(obj) {
     return obj == null ? function(){} : function(key) {
       return obj[key];
@@ -1833,6 +1871,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
   };
 
   // Run a function **n** times.
+  // 每一次调用iteratee传递index参数。生成一个返回值的数组。
   _.times = function(n, iteratee, context) {
     var accum = Array(Math.max(0, n));
     iteratee = optimizeCb(iteratee, context, 1);
