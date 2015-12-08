@@ -177,7 +177,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
 //     Underscore may be freely distributed under the MIT license.
 
 (function() {
-
+  
   // Baseline setup
   // --------------
 
@@ -1880,6 +1880,8 @@ _.each = _.forEach = function(obj, iteratee, context) {
   };
 
   // Return a random integer between min and max (inclusive).
+  // 返回min-max间的随机数
+  // 如果只传入一个参数，那么默认这个数为max值，min值为0
   _.random = function(min, max) {
     if (max == null) {
       max = min;
@@ -1894,6 +1896,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
   };
 
    // List of HTML entities for escaping.
+   // 转义字符
   var escapeMap = {
     '&': '&amp;',
     '<': '&lt;',
@@ -1905,6 +1908,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
   var unescapeMap = _.invert(escapeMap);
 
   // Functions for escaping and unescaping strings to/from HTML interpolation.
+  // 对字符串进行转码
   var createEscaper = function(map) {
     var escaper = function(match) {
       return map[match];
@@ -1933,6 +1937,7 @@ _.each = _.forEach = function(obj, iteratee, context) {
 
   // Generate a unique integer id (unique within the entire client session).
   // Useful for temporary DOM ids.
+  // 为DOM生成一个全局唯一的id，如果prefix存在，那么在id之前加上prefix
   var idCounter = 0;
   _.uniqueId = function(prefix) {
     var id = ++idCounter + '';
@@ -2047,7 +2052,6 @@ _.each = _.forEach = function(obj, iteratee, context) {
     // 如果依旧可以链式调用，那么调用underscore原型中的chain，不是_.chain()，请注意
     // 所以这里的obj是一个运算结果，然后这个结果被新建了一个_实例，且wrapped对应这个结果
     // 然后调用chain又将这个结果传进去，以此来达到链式调用的效果
-    console.log(obj)
     return instance._chain ? _(obj).chain() : obj;
   };
 
